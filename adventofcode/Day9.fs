@@ -60,3 +60,32 @@ let parseAndScore =
 let day9 () =
     getLine "Day9Input.txt"
     |> parseAndScore
+
+let rec parseGarbageAmount (sofar : Structure array) (count : int) (input : IEnumerable<char>) =
+    if input.Count() = 0
+    then count
+    else
+        match input.ElementAt(0) with
+        | '{' -> if isInsideGarbage sofar
+                 then parseGarbageAmount sofar (count + 1) (input.Skip 1) 
+                 else let sofar' = Array.append sofar [| GroupStart |]
+                      parseGarbageAmount sofar' count (input.Skip 1)
+        | '}' -> if isInsideGarbage sofar
+                 then parseGarbageAmount sofar (count + 1) (input.Skip 1)
+                 else let sofar' = Array.append sofar [| GroupEnd |]
+                      parseGarbageAmount sofar' count (input.Skip 1)
+        | '<' -> if isInsideGarbage sofar
+                 then parseGarbageAmount sofar (count + 1) (input.Skip 1)
+                 else let sofar' = Array.append sofar [| GarbageStart |]
+                      parseGarbageAmount sofar' count (input.Skip 1)
+        | '>' -> let sofar' = Array.append sofar [| GarbageEnd |]
+                 parseGarbageAmount sofar' count (input.Skip 1)
+        | '!' -> parseGarbageAmount sofar count (input.Skip 2)
+        | _ -> if isInsideGarbage sofar
+               then parseGarbageAmount sofar (count + 1) (input.Skip 1)
+               else parseGarbageAmount sofar count (input.Skip 1)
+
+let day9Part2 () =
+    getLine "Day9Input.txt"
+    |> fun x -> x.ToCharArray()
+    |> parseGarbageAmount [||] 0
