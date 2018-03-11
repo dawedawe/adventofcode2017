@@ -116,7 +116,20 @@ let evalLines lines =
     let m = cpu.registers.Select(fun r -> r.value).Max()
     m
 
+let evalLinesPart2 lines =
+    let cpu = { registers = List<Register>() }
+    let mutable max = 0
+    for l in lines do
+        let i = parseLine l
+        eval cpu i |> ignore
+        let currentMax = cpu.registers.Select(fun r -> r.value).Max()
+        if currentMax > max
+        then max <- currentMax
+    max
 let day8 () =
     getLines "Day8Input.txt"
     |> evalLines
     
+let day8Part2 () =
+    getLines "Day8Input.txt"
+    |> evalLinesPart2
