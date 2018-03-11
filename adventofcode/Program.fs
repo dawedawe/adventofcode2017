@@ -4,6 +4,6 @@ open System
 
 [<EntryPoint>]
 let main argv =
-    let r = Day4.countValidPassphrasesPart2 ()
+    let r = Day5.countStepsToExitPart2 ()
     printfn "%A" r
     0 // return an integer exit code
