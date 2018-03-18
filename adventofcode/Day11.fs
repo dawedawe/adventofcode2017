@@ -37,20 +37,18 @@ let distance (pos1 : Position) (pos2 : Position) =
 let readPath path =
     let l = File.ReadAllText path
     l
-
+    
 let parseLine (line : string) =
     let a = line.Split ','
-    let mutable path = [||]
-    for d in a do
-        let dir = match d with
-                  | "n" -> N
-                  | "ne" -> NE
-                  | "se" -> SE
-                  | "s" -> S
-                  | "sw" -> SW
-                  | "nw" -> NW
-        path <- Array.append path [|dir|]
-    List.ofArray path
+    let f d = match d with
+              | "n" -> N
+              | "ne" -> NE
+              | "se" -> SE
+              | "s" -> S
+              | "sw" -> SW
+              | "nw" -> NW
+              | _ -> raise(Exception("unknown direction"))
+    Array.map f a |> List.ofArray
 
 let distanceAfterPath start path =
     go start path
@@ -61,3 +59,16 @@ let day11 () =
     readPath "Day11Input.txt"
     |> parseLine
     |> distanceAfterPath start
+
+let rec goPart2 start pos currentMax dirs =
+    match dirs with
+    | d :: rest -> let pos' = step d pos
+                   let currentMax' = max (distance start pos') currentMax
+                   goPart2 start pos' currentMax' rest 
+    | [] -> currentMax
+
+let day11Part2 () =
+    let start = { x = 0; y = 0; z = 0 }
+    File.ReadAllText "Day11Input.txt" 
+    |> parseLine
+    |> goPart2 start start 0
