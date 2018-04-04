@@ -33,10 +33,37 @@ let getGroup (startId : int) (dic : Dictionary<int, int array>) : HashSet<int> =
     let g = HashSet<int>()
     g.Add startId |> ignore
     getGroupHelper dic startId g
-
         
 let day12 () =
     System.IO.File.ReadAllLines "Day12Input.txt"
     |> constructDic
     |> getGroup 0
     |> fun x -> x.Count
+
+let parseLinePart2 (line : string) =
+    let arrowIndex = line.IndexOf("<->")
+    let key = line.Substring(0, arrowIndex) |> Int32.Parse
+    let values = line.Substring(arrowIndex + 3).Split(',')
+                 |> Array.map Int32.Parse
+    Set.union (Set.singleton key) (Set.ofArray values)
+
+let fintAffectedGroups existingGroups newGroup =
+    let mutable affectedGroups = Set.empty
+    for g in existingGroups do
+        if Set.intersect g newGroup <> Set.empty
+        then affectedGroups <- Set.add g affectedGroups
+    affectedGroups
+
+let day12Part2 () =
+    let lines = System.IO.File.ReadAllLines "Day12Input.txt"
+                |> Array.map parseLinePart2
+    let mutable groups = Set.empty
+    for lineGroup in lines do
+        let affectedGroups = fintAffectedGroups groups lineGroup
+        let mutable mergedGroup = Set.empty
+        for aG in affectedGroups do
+            groups <- Set.remove aG groups
+            mergedGroup <- Set.union mergedGroup aG
+        mergedGroup <- Set.union mergedGroup lineGroup
+        groups <- Set.add mergedGroup groups
+    Set.count groups
