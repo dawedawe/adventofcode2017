@@ -1,6 +1,8 @@
 module Day16
 
 open System
+open System.Collections.Generic
+open System.Linq
 
 type Move =
     | S of int
@@ -35,6 +37,30 @@ let dance moves =
         dancers <- makeMove dancers m
     Array.fold (fun x y -> string(x) + string(y)) "" dancers
 
+let danceLoop moves n =
+    let mutable dancers = [for x in [97 .. 112] do yield char(x)] |> List.toArray
+    let mutable i = 1
+    while i <= n do
+        printfn "%d" i
+        i <- i + 1
+        for m in moves do
+            dancers <- makeMove dancers m
+    Array.fold (fun x y -> string(x) + string(y)) "" dancers
+
+let danceTillAtStartAgain moves =
+    let mutable dancers = [for x in [97 .. 112] do yield char(x)] |> List.toArray
+    let positions = Dictionary<int, char []>()
+    let mutable i = 1
+    positions.Add(i, Array.copy dancers)
+    for m in moves do
+            dancers <- makeMove dancers m
+    while (not (positions.Any(fun kv -> kv.Value = dancers))) do
+        i <- i + 1
+        positions.Add(i, Array.copy dancers)
+        for m in moves do
+            dancers <- makeMove dancers m
+    positions
+
 let parseMove (moveString : string) =
     let moveType = moveString.[0]
     let args = moveString.[1..].Split [|'/'|]
@@ -53,4 +79,12 @@ let day16 () =
     let moves = parseMoves input
     let dancers = dance moves
     dancers
+
+let day16Part2 () =
+    let input = System.IO.File.ReadAllText "Day16Input.txt"
+    let moves = parseMoves input
+    let positions = danceTillAtStartAgain moves
+    let i = 1000000000 % positions.Count
+    let dancers = positions.[i+1]
+    Array.fold (fun x y -> string(x) + string(y)) "" dancers
     
