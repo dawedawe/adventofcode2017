@@ -44,8 +44,23 @@ let getNearest (particles : Particle []) =
     |> smallestIndexesBy (fun p -> manhattanDistance p.v)
     |> fun a -> a.[0].id
 
-let day20 () =
-    let input = System.IO.File.ReadAllLines "Day20Input.txt"
+[<Literal>]
+let InputFile = "Day20Input.txt"
+
+let getParticles () =
+    let input = System.IO.File.ReadAllLines InputFile
     let inputIndexed = Array.zip input [|0 .. (input.Length - 1)|]
-    let particles = Array.map parseLine inputIndexed
+    Array.map parseLine inputIndexed
+
+let day20 () =
+    let particles = getParticles()
     getNearest particles
+
+let day20Part2 () =
+    let mutable particles = getParticles()
+    for _ in [1 .. 1000] do
+        particles <- Array.map tick particles
+        let particleGroups = Array.groupBy (fun p -> p.p) particles
+        let singletonGroups = Array.filter (fun g -> (Array.length (snd g)) = 1) particleGroups
+        particles <- Array.map (fun (g : (int*int*int) * Particle []) -> (snd g).[0]) singletonGroups
+    particles.Length
