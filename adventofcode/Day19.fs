@@ -82,7 +82,7 @@ let determineNewDir pipeMap currentPoint currentDir =
     then raise(Exception("no possible new direction found"))
     else newDir.[0]
 
-let rec moveOneStep (letters : List<char>) (pipeMap : PipeMap) (currentPoint : MapPoint) (dir : Direction) =
+let rec moveOneStep steps (letters : List<char>) (pipeMap : PipeMap) (currentPoint : MapPoint) (dir : Direction) =
     printfn "current %d %d %A %A" currentPoint.x currentPoint.y currentPoint.pipe.Value dir
     let newState = match (currentPoint, dir) with
                     | p, Down when (p.pipe.IsSome && (p.pipe = Some Vertical || p.pipe = Some Horizontal)) ->  (p.x, p.y + 1), Down, letters
@@ -106,19 +106,20 @@ let rec moveOneStep (letters : List<char>) (pipeMap : PipeMap) (currentPoint : M
                                       | Right -> (p.x + 1, p.y), Right, letters
                         | _ -> raise(Exception("bad state 1"))
                     | _ -> raise(Exception("bad state 2"))
+    let newSteps = steps + 1
     newState |> fun ((x, y), newDir, newLetters) -> printfn "new %d %d %A" x y newDir
                                                     if (isValidPointOnMap x y pipeMap)
-                                                      then moveOneStep newLetters pipeMap pipeMap.[y].[x] newDir
-                                                      else newLetters
+                                                      then moveOneStep newSteps newLetters pipeMap pipeMap.[y].[x] newDir
+                                                      else newSteps, newLetters
 
 let findWay (pipeMap : PipeMap) =
     let start = getStartPoint pipeMap
     let letters = System.Collections.Generic.List<char>()
-    let chars = moveOneStep letters pipeMap start Down
+    let steps, chars = moveOneStep 0 letters pipeMap start Down
     let mutable s = ""
     for c in chars do
         s <- s + c.ToString()
-    s
+    steps, s
     
 let day19 () =
     let input = System.IO.File.ReadAllLines("Day19Input.txt")
