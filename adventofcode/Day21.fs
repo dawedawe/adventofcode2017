@@ -1,6 +1,7 @@
 module Day21
 
 open System
+open System.Threading.Tasks
 
 type Pixel = char
 let Off = '.'
@@ -16,19 +17,21 @@ let rotateCw90 (pattern : Pattern) =
     let rows = Array2D.length1 pattern
     let cols = Array2D.length2 pattern
     let pattern2 = Array2D.create cols rows Off
-    for r in [0 .. (rows - 1)] do
+    let rowsIndexLimit = rows - 1
+    for r in [0 .. rowsIndexLimit] do
         for c in [0 .. (cols - 1)] do
-            let c' = (rows - 1) - r
+            let c' = rowsIndexLimit - r
             pattern2.[c, c'] <- pattern.[r, c]
     pattern2
 
 let rotateCcw90 (pattern : Pattern) =
     let rows = Array2D.length1 pattern
     let cols = Array2D.length2 pattern
+    let colsIndexLimit = cols - 1
     let pattern2 = Array2D.create cols rows Off
     for r in [0 .. (rows - 1)] do
-        for c in [0 .. (cols - 1)] do
-            let r' = (cols - 1) - c
+        for c in [0 .. colsIndexLimit] do
+            let r' = colsIndexLimit - c
             pattern2.[r', r] <- pattern.[r, c]
     pattern2
 
@@ -51,9 +54,9 @@ let flipV (pattern : Pattern) =
     for c in [0 .. (colsToFlip - 1)] do
         let leftColToSwap = pattern.[*, c]
         let c' = (Array2D.length2 pattern - 1) - c
-        let rightCOlToSwap = pattern.[*, c']
+        let rightColToSwap = pattern.[*, c']
         pattern2.[*, c'] <- leftColToSwap
-        pattern2.[*, c] <- rightCOlToSwap
+        pattern2.[*, c] <- rightColToSwap
     pattern2
 
 let flipD (pattern : Pattern) =
@@ -75,8 +78,9 @@ let rotateCw90flipH = rotateCw90 >> flipH
 
 let createXbyX (pattern : Pattern) x r c =
     let newPattern = Array2D.create x x Off
-    for r' in [0 .. (x - 1)] do
-        for c' in [0 .. (x - 1)] do
+    let rowsColsIndexLimit = x - 1
+    for r' in [0 .. rowsColsIndexLimit] do
+        for c' in [0 .. rowsColsIndexLimit] do
             newPattern.[r', c'] <- pattern.[r + r', c + c']
     newPattern
 
@@ -107,12 +111,13 @@ let breakUp (pattern : Pattern) : Pattern [] =
     let size = if length % 2 = 0
                then 2
                else 3 
-    let mutable brokenPattern = [||]
-    for r in [0 .. size .. (length - size)] do
-        for c in [0 .. size .. length - size] do
+    let rowsColsIndexLimit = length - size
+    let brokenPattern = System.Collections.Generic.List<Pattern>(rowsColsIndexLimit / size)
+    for r in [0 .. size .. rowsColsIndexLimit] do
+        for c in [0 .. size .. rowsColsIndexLimit] do
             let newPattern = createXbyX pattern size r c
-            brokenPattern <- Array.append brokenPattern (Array.singleton newPattern)
-    brokenPattern
+            brokenPattern.Add(newPattern)
+    brokenPattern.ToArray()
 
 let parseRuleLine (line : string) : Rule =
     let index = line.IndexOf(" => ")
@@ -133,26 +138,29 @@ let isMatchingRule (rule : Pattern * Pattern) (pattern : Pattern) =
     then
         let left = fst rule
         let mutable equal = true 
-        for r in [0 .. (Array2D.length1 pattern - 1)] do
+        let mutable r = 0
+        let rows = Array2D.length1 pattern
+        while (equal && r < rows) do
             let rowEqual = pattern.[r, *] = left.[r, *]
-            equal <- equal && rowEqual
+            equal <- equal && rowEqual 
+            r <- r + 1
         equal
     else
         false
 
-let findMatchingRule (rules : Rule []) transitions (pattern : Pattern) =
+let findMatchingRule (rules : Rule []) (transitions : seq<(Pattern -> Pattern)>) (pattern : Pattern) =
     let mutable matchingRule = None
     let mutable ruleIndex = 0
     while matchingRule.IsNone && ruleIndex < Array.length rules do
         let ruleToTry = rules.[ruleIndex]
-        for t in transitions do
-            let pattern' = t pattern
-            if isMatchingRule ruleToTry pattern'
-            then matchingRule <- Some ruleToTry
+        Parallel.ForEach(transitions, fun t ->
+                                      let pattern' = t pattern
+                                      if isMatchingRule ruleToTry pattern'
+                                      then matchingRule <- Some ruleToTry) |> ignore 
         ruleIndex <- ruleIndex + 1
     if matchingRule.IsNone
     then raise(Exception("no matching rule found"))
-    else matchingRule.Value
+    else matchingRule.Value    
 
 let countPixels (pattern : Pattern) (pixel : Pixel) =
     let mutable count = 0
@@ -173,12 +181,19 @@ let day21 () =
     let transitions = [id; rotateCw90; rotateCcw90; rotate180; flipH; flipV; flipD;
                        rotateCw90flipV; rotateCw90flipH]
     let mutable currentPattern = startPattern
-    for _ in [0 .. 4] do                   
+
+    let stopwatch = System.Diagnostics.Stopwatch()
+    
+    for i in [1 .. 18] do
+        stopwatch.Start()                   
         let brokenPatterns = breakUp currentPattern
         let mutable transitionedPatterns = [||]
         for p in brokenPatterns do 
             let matchingRule = findMatchingRule rules transitions p
             let transitionedPattern = snd matchingRule
             transitionedPatterns <- Array.append transitionedPatterns (Array.singleton (transitionedPattern))
-            currentPattern <- listToGrid transitionedPatterns
+        currentPattern <- listToGrid transitionedPatterns
+        stopwatch.Stop()
+        printfn "iteration %d: %A" i stopwatch.Elapsed
+        stopwatch.Reset()
     countPixels currentPattern On

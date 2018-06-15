@@ -29,3 +29,19 @@ let testIsMatchingRule2 () =
         let matchingRule = findMatchingRule rules transitions pattern
         let o = snd matchingRule
         Assert.True((Array2D.length1 o = 4))
+
+[<Fact>]
+let testRotateCw90 () =
+    let pattern : Pattern = array2D [|
+                                        [| '1'; '2'; '3' |];
+                                        [| '4'; '5'; '6' |];
+                                        [| '7'; '8'; '9' |];
+                                    |]
+    let expected : Pattern = array2D [|
+                                        [| '7'; '4'; '1' |];
+                                        [| '8'; '5'; '2' |];
+                                        [| '9'; '6'; '3' |];
+                                       
+                                     |]
+    let pattern' = rotateCw90 pattern
+    Assert.True((pattern' = expected))
