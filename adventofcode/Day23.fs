@@ -47,8 +47,9 @@ let constructRegisters (instructions : Instruction array) =
     |> Array.map (fun n -> dic.Add(n, 0L)) |> ignore
     dic
 
-let constructProgram (instructions : Instruction array) : Program =
+let constructProgram (instructions : Instruction array) (debug : bool) : Program =
     let regs = constructRegisters instructions
+    if not debug then regs.['a'] <- 1L
     {
         instructions = instructions
         registers = regs
@@ -79,7 +80,7 @@ let eval (prog : Program) : Program =
 let rec execute (prog : Program) =
     if prog.nextInstruction >= 0L && prog.nextInstruction < int64(prog.instructions.Length)
     then eval prog |> execute
-    else prog.invokedMuls
+    else prog
 
 let parseValue s =
     let r, i = Int64.TryParse(s)
@@ -96,9 +97,34 @@ let parseInstruction (s : string) =
     | "jnz" -> Jnz ((parseValue parts.[1]), (parseValue parts.[2]))
     | _ -> raise(Exception("unknown instruction"))
 
-let day23 () =
-    let input = System.IO.File.ReadAllLines("Day23Input.txt")
+[<Literal>]
+let InputFile = "Day23Input.txt"
+
+let getProgram debug =
+    let input = System.IO.File.ReadAllLines(InputFile)
     let instructions = Array.map parseInstruction input
-    let prog = constructProgram instructions
+    constructProgram instructions debug
+
+let day23 () =
+    let prog = getProgram true
     let r = execute prog
-    r
+    r.invokedMuls
+
+let isPrime n =
+    if n = 1 then
+        false
+    else
+        let limit = int(System.Math.Sqrt(float(n)))
+        let mutable i = 2
+        let mutable prime = true
+        while i <= limit && prime do
+            if n % i = 0 then prime <- false else i <- i + 1
+        prime
+
+let day23Part2 () =
+    let mutable noPrimes = 0
+    let mutable i = 106500
+    while i <= 123500 do
+        if not (isPrime i) then noPrimes <- noPrimes + 1
+        i <- i + 17
+    noPrimes
