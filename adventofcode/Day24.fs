@@ -60,13 +60,33 @@ let parseLine (line : string) =
 let bridgeSum (bridge : Bridge) =
     List.sumBy (fun b -> b.port1 + b.port2) bridge
 
-let day24 () =
-    let input = System.IO.File.ReadAllLines "Day24Input.txt"
+let bridgeLength (bridge : Bridge) =
+    List.length bridge
+
+[<Literal>]
+let InputFile = "Day24Input.txt"
+
+let constructAllPossibleBridges () =
+    let input = System.IO.File.ReadAllLines InputFile
     let components = Array.map parseLine input
     let startingBridgesAndRests = findStartComponents components
     let mutable bridges = Set.map fst startingBridgesAndRests
     for sb, rest in startingBridgesAndRests do
         let bridges' = findMatchingComponents sb rest
         bridges <- Set.union bridges bridges'
+    bridges
+
+let day24 () =
+    let bridges = constructAllPossibleBridges()
     let m = Set.maxElement(Set.map bridgeSum bridges)
     m
+
+let day24Part2 () =
+    let bridges = constructAllPossibleBridges()
+    let longest = List.sortByDescending bridgeLength (Set.toList bridges)
+    let longestLength = bridgeLength longest.[0]
+    List.filter (fun b -> bridgeLength b = longestLength) longest
+    |> List.sortByDescending bridgeSum
+    |> List.item 0
+    |> bridgeSum
+    
